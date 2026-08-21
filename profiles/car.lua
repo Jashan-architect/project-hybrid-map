@@ -27,7 +27,7 @@ function setup()
       u_turn_penalty                 = 20,
       continue_straight_at_waypoint  = true,
       use_turn_restrictions          = true,
-      left_hand_driving              = false,
+      left_hand_driving              = true,
     },
 
     default_mode              = mode.driving,
@@ -51,17 +51,17 @@ function setup()
     priority_penalty          = 0.7,
 
     -- Size of the vehicle, to be limited by physical restriction of the way
-    vehicle_height = 2.0, -- in meters, 2.0m is the height slightly above biggest SUVs
-    vehicle_width = 1.9, -- in meters, ways with narrow tag are considered narrower than 2.2m
+    vehicle_height = 4.1, -- in meters,4.0m is height of trucks under N3 category and 4.1 is for safety
+    vehicle_width = 2.7, -- in meters, truck width is 2.6m under N3 category
 
     -- Size of the vehicle, to be limited mostly by legal restriction of the way
-    vehicle_length = 4.8, -- in meters, 4.8m is the length of large or family car
-    vehicle_weight = 2000, -- in kilograms
+    vehicle_length = 12.0, -- in meters, 12 is the max length for truck under N3 category 
+    vehicle_weight = 49000, -- in kilograms according to PIB 
 
     -- Optional: upper limit for all speeds (e.g., 87 for trucks)
     -- When set, no derived speed will exceed this value
     -- When nil (default), no additional capping is applied
-    vehicle_max_speed = nil, -- in km/h
+    vehicle_max_speed = 85, -- MoRTH legal max speed cap for trucks in India is 80km/h , 85km/h is for safety
 
     -- a list of suffixes to suppress in name change instructions. The suffixes also include common substrings of each other
     suffix_list = {
@@ -86,7 +86,8 @@ function setup()
       'vehicle',
       'permissive',
       'designated',
-      'hov'
+      'hgv', -- for heavy good vehciles
+      'goods' -- for normal trucks
     },
 
     access_tag_blacklist = Set {
@@ -104,12 +105,11 @@ function setup()
       'restricted',
       'military',
       'official',
-      'customers',
-      'private',
-      'delivery',
-      'destination',
-      'permit',
-      'residents'
+       --'customers',
+       --'private',
+       -- 'delivery',
+       --'permit',
+       --residents'
     },
 
     -- tags disallow access to in combination with highway=service
@@ -168,23 +168,24 @@ function setup()
 
     speeds = Sequence {
       highway = {
-        motorway        = 90,
-        motorway_link   = 45,
-        trunk           = 85,
-        trunk_link      = 40,
-        primary         = 65,
-        primary_link    = 30,
-        secondary       = 55,
-        secondary_link  = 25,
-        tertiary        = 40,
-        tertiary_link   = 20,
-        unclassified    = 25,
-        residential     = 25,
-        living_street   = 10,
-        service         = 15,
+        -- all speeds are under MORTH guidline
+        motorway        = 80, -- express way
+        motorway_link   = 45, -- ye main road pe jane waale connecters h
+        trunk           = 70, -- national highway
+        trunk_link      = 40, -- ye main road pe jane waale connecters h
+        primary         = 60, -- state highway
+        primary_link    = 30, -- ye main road pe jane waale connecters h
+        secondary       = 45, -- district roads ya sher ki badi sdake[SH and major district rpads h ye]
+        secondary_link  = 25, -- ye main road pe jane waale connecters h
+        tertiary        = 35, -- district roads ya sher ki badi sdake[other district roads{ODR} and city ke ander ki main roads]
+        tertiary_link   = 20, -- ye main road pe jane waale connecters h
+        unclassified    = 25, -- local village road
+        residential     = 20, -- colonies ki roads
+        living_street   = 5, -- patli galyiaan
+        service         = 10, -- serviece lanes
         -- winter highway types (OSM highway=winter_road / highway=ice_road)
-        winter_road     = 20,
-        ice_road        = 15
+        winter_road     = 20, -- for cold areas
+        ice_road        = 15  -- for cold areas
       }
     },
 
