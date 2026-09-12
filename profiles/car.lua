@@ -459,6 +459,40 @@ function process_way(profile, way, result, relations)
     return
   end
 
+    -- Custom road preference multiplier logic for India Truck Routing
+  -- Preference Order: Expressway > NH > City Bypass/SH > MDR > ODR
+  local preference_multiplier = 1.0
+
+  if data.highway == 'motorway' then
+    preference_multiplier = 1.0        -- Top Priority (Expressway)
+  elseif data.highway == 'motorway_link' then
+    preference_multiplier = 0.95
+  elseif data.highway == 'trunk' then
+    preference_multiplier = 0.90        -- National Highway (NH)
+  elseif data.highway == 'trunk_link' then
+    preference_multiplier = 0.85
+  elseif data.highway == 'primary' then
+    preference_multiplier = 0.75        -- State Highway / City Bypass
+  elseif data.highway == 'primary_link' then
+    preference_multiplier = 0.70
+  elseif data.highway == 'secondary' then
+    preference_multiplier = 0.55        -- Major District Road (MDR)
+  elseif data.highway == 'secondary_link' then
+    preference_multiplier = 0.50
+  elseif data.highway == 'tertiary' then
+    preference_multiplier = 0.35        -- Other District Road (ODR)
+  elseif data.highway == 'tertiary_link' then
+    preference_multiplier = 0.30
+  elseif data.highway == 'unclassified' or data.highway == 'residential' then
+    preference_multiplier = 0.15        -- Local village / colony roads (Strict Avoid for trucks)
+  else
+    preference_multiplier = 0.10        -- Baki sab service lanes ya narrow paths ke liye
+  end
+
+  -- Ye multipliers handlers ko bypass karke direct result me set karne ke liye variable me store kar lete hain
+  data.preference_multiplier = preference_multiplier
+
+
   handlers = Sequence {
     -- set the default mode for this profile. if can be changed later
     -- in case it turns we're e.g. on a ferry
@@ -502,10 +536,23 @@ function process_way(profile, way, result, relations)
     -- apply vehicle-specific maximum speed cap before calculating rates
     WayHandlers.vehicle_speed_cap,
 
-    WayHandlers.penalties,
+     WayHandlers.penalties,
 
-    -- compute class labels
-    WayHandlers.classes,
+  -- Custom preference multiplier implementation
+  function(profile, way, result, data)
+    if data.preference_multiplier then
+      if result.forward_rate > 0 then
+        result.forward_rate = result.forward_rate * data.preference_multiplier
+      end
+      if result.backward_rate > 0 then
+        result.backward_rate = result.backward_rate * data.preference_multiplier
+      end
+    end
+  end,
+
+  -- compute class labels
+  WayHandlers.classes,
+
 
     -- handle turn lanes and road classification, used for guidance
     WayHandlers.turn_lanes,
