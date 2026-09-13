@@ -90,6 +90,8 @@ function setup()
       'goods' -- for normal trucks
     },
 
+    --the commented part is commented because of decision tree of OSRM priority of blocklist is greater than restricted list
+    
     access_tag_blacklist = Set {
       'no',
       'agricultural',
@@ -105,17 +107,19 @@ function setup()
       'restricted',
       'military',
       'official',
-       --'customers',
-       --'private',
-       -- 'delivery',
-       --'permit',
-       --residents'
+       --'customers', it is excluded as truck need to enter in the warehouse
+       --'private', this roads are private only for the assigned institution 
+       -- 'delivery', those routes which are only for delivery like private routes for logistic companies this is sub part of private roads 
+       --'permit', non permited area
+       --residents' residentail areas
     },
 
     -- tags disallow access to in combination with highway=service
     service_access_tag_blacklist = Set {
         'private'
     },
+
+    -- this is the last option if no route is avialable 
 
     restricted_access_tag_list = Set {
       'private',
@@ -166,6 +170,8 @@ function setup()
       'proposed'
     },
 
+    -- this is the max speeds for OSRM , if truck speed is more than mentioned below then OSRM will see the particular vehcile as invalid
+    
     speeds = Sequence {
       highway = {
         -- all speeds are under MORTH guidline
@@ -459,10 +465,12 @@ function process_way(profile, way, result, relations)
     return
   end
 
-    -- Custom road preference multiplier logic for India Truck Routing
-  -- Preference Order: Expressway > NH > City Bypass/SH > MDR > ODR
+  -- priority tree
+  -- Custom road preference multiplier logic for India Truck Routing
+  -- Preference Order: Expressway > NH[national highway] > SH[state highway] > MDR[major district roads] > ODR[other district roads]
+  
   local preference_multiplier = 1.0
-
+  
   if data.highway == 'motorway' then
     preference_multiplier = 1.0        -- Top Priority (Expressway)
   elseif data.highway == 'motorway_link' then
