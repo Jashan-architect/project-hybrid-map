@@ -464,42 +464,53 @@ function process_way(profile, way, result, relations)
   then
     return
   end
+  
+-- Custom road preference multiplier logic for India Truck Routing
+-- Preference Order: Expressway > NH > SH > MDR > ODR
 
-  -- priority tree
-  -- Custom road preference multiplier logic for India Truck Routing
-  -- Preference Order: Expressway > NH[national highway] > SH[state highway] > MDR[major district roads] > ODR[other district roads]
-  
-  local preference_multiplier = 1.0
-  
-  if data.highway == 'motorway' then
-    preference_multiplier = 1.0        -- Top Priority (Expressway)
-  elseif data.highway == 'motorway_link' then
+local highway_type = way:get_value_by_key("highway")
+local preference_multiplier = 1.0
+
+if highway_type == 'motorway' then
+    preference_multiplier = 1.0       -- Top Priority (Expressway)
+elseif highway_type == 'motorway_link' then
     preference_multiplier = 0.95
-  elseif data.highway == 'trunk' then
-    preference_multiplier = 0.90        -- National Highway (NH)
-  elseif data.highway == 'trunk_link' then
+elseif highway_type == 'trunk' then
+    preference_multiplier = 0.90       -- National Highway (NH)
+elseif highway_type == 'trunk_link' then
     preference_multiplier = 0.85
-  elseif data.highway == 'primary' then
-    preference_multiplier = 0.75        -- State Highway / City Bypass
-  elseif data.highway == 'primary_link' then
+elseif highway_type == 'primary' then
+    preference_multiplier = 0.75       -- State Highway / City Bypass
+elseif highway_type == 'primary_link' then
     preference_multiplier = 0.70
-  elseif data.highway == 'secondary' then
-    preference_multiplier = 0.55        -- Major District Road (MDR)
-  elseif data.highway == 'secondary_link' then
+elseif highway_type == 'secondary' then
+    preference_multiplier = 0.55       -- Major District Road (MDR)
+elseif highway_type == 'secondary_link' then
     preference_multiplier = 0.50
-  elseif data.highway == 'tertiary' then
-    preference_multiplier = 0.35        -- Other District Road (ODR)
-  elseif data.highway == 'tertiary_link' then
+elseif highway_type == 'tertiary' then
+    preference_multiplier = 0.35       -- Other District Road (ODR)
+elseif highway_type == 'tertiary_link' then
     preference_multiplier = 0.30
-  elseif data.highway == 'unclassified' or data.highway == 'residential' then
-    preference_multiplier = 0.15        -- Local village / colony roads (Strict Avoid for trucks)
-  else
-    preference_multiplier = 0.10        -- Baki sab service lanes ya narrow paths ke liye
-  end
+elseif highway_type == 'unclassified' or highway_type == 'residential' then
+    preference_multiplier = 0.15       -- Local village / colony roads (Strict Avoid for trucks)
+else
+    preference_multiplier = 0.10       -- Baki sab service lanes ya narrow paths ke liye
+end
 
-  -- Ye multipliers handlers ko bypass karke direct result me set karne ke liye variable me store kar lete hain
-  data.preference_multiplier = preference_multiplier
+-- CRITICAL SYSTEM FIX: Base routing calculations par multiplier ko apply karna compulsory hai
+-- Iske bina OSRM graph computations default routing profiles par hi stick rahengi
+if result.forward_speed and result.forward_speed > 0 then
+    result.forward_speed = result.forward_speed * preference_multiplier
+end
 
+if result.backward_speed and result.backward_speed > 0 then
+    result.backward_speed = result.backward_speed * preference_multiplier
+end
+
+-- Agar aage dynamic physics layer ke liye duration variables track karne hain:
+if result.duration and result.duration > 0 then
+    result.duration = result.duration / preference_multiplier
+end
 
   handlers = Sequence {
     -- set the default mode for this profile. if can be changed later
